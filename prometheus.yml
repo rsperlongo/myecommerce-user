@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'nestjs-microservices'
+    static_configs:
+      - targets: ['host.docker.internal:3001', 'host.docker.internal:3002'] 
+      # Substitua pelas portas onde seus microserviços NestJS estarão rodando
