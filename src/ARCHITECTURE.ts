@@ -1,8 +1,8 @@
 /**
  * Microservices Architecture - Clean Architecture + DDD
- * 
+ *
  * Folder Structure:
- * 
+ *
  * src/
  * ├── domain/              # Business Logic & Entities
  * │   ├── entities/        # Domain Entities
