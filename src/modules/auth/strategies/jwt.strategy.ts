@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UserRole } from '../../../domain/enums/user-role.enum';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -14,6 +15,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     await Promise.resolve();
-    return { userId: payload.sub, email: payload.email, roles: payload.roles };
+    return { 
+      userId: payload.sub, 
+      email: payload.email, 
+      roles: payload.roles || [UserRole.USER],
+      isActive: payload.isActive || true
+    };
   }
 }

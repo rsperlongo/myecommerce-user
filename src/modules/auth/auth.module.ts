@@ -5,6 +5,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
+import { RolesGuard } from './guards/roles.guard';
+import { CreateUserWithRolesUseCase } from '../../application/use-cases/create-user-with-roles.usecase';
+import { UserEntity } from '../../domain/entities/user.entity';
+import { UserRole } from '../../domain/enums/user-role.enum';
+import { v4 as uuidv4 } from 'uuid';
 
 @Module({
   imports: [
@@ -20,8 +25,35 @@ import { AuthController } from './auth.controller';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService, 
+    JwtStrategy, 
+    RolesGuard,
+    CreateUserWithRolesUseCase,
+    // TODO: Adicionar implementação real do UserRepository quando estiver disponível
+    {
+      provide: 'IUserRepository',
+      useValue: {
+        findByEmail: async (email: string) => {
+          // Mock implementation - sempre retorna null para permitir criação
+          return null;
+        },
+        save: async (email: string, passwordHash: string) => {
+          // Mock implementation que retorna um UserEntity válido
+          return new UserEntity({
+            id: uuidv4(),
+            email,
+            password: passwordHash,
+            roles: [UserRole.USER],
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
+      }
+    }
+  ],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, JwtModule, RolesGuard],
 })
 export class AuthModule {}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { UserEntity } from '../../../domain/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,13 @@ export class AuthService {
     return await bcrypt.compare(password, hash);
   }
 
-  generateToken(payload: any): string {
+  generateToken(user: UserEntity): string {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      roles: user.roles,
+      isActive: user.isActive
+    };
     return this.jwtService.sign(payload);
   }
 
