@@ -5,8 +5,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
+import { UsersController } from './controllers/users.controller';
 import { RolesGuard } from './guards/roles.guard';
+
+// Use Cases
 import { CreateUserWithRolesUseCase } from '../../application/use-cases/create-user-with-roles.usecase';
+import { GetUsersUseCase } from '../../application/use-cases/get-users.usecase';
+import { GetUserByIdUseCase } from '../../application/use-cases/get-user-by-id.usecase';
+import { UpdateUserUseCase } from '../../application/use-cases/update-user.usecase';
+import { DeleteUserUseCase } from '../../application/use-cases/delete-user.usecase';
+
 import { UserEntity } from '../../domain/entities/user.entity';
 import { UserRole } from '../../domain/enums/user-role.enum';
 import { v4 as uuidv4 } from 'uuid';
@@ -26,11 +34,19 @@ import { v4 as uuidv4 } from 'uuid';
     }),
   ],
   providers: [
+    // Services
     AuthService, 
     JwtStrategy, 
     RolesGuard,
+    
+    // Use Cases
     CreateUserWithRolesUseCase,
-    // TODO: Adicionar implementação real do UserRepository quando estiver disponível
+    GetUsersUseCase,
+    GetUserByIdUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
+    
+    // Repository Mock (TODO: Substituir por implementação real)
     {
       provide: 'IUserRepository',
       useValue: {
@@ -49,11 +65,31 @@ import { v4 as uuidv4 } from 'uuid';
             createdAt: new Date(),
             updatedAt: new Date()
           });
+        },
+        findById: async (id: string) => {
+          // Mock implementation
+          return null;
+        },
+        findAll: async (filters: any) => {
+          // Mock implementation
+          return [];
+        },
+        update: async (id: string, data: any) => {
+          // Mock implementation
+          return new UserEntity({
+            id,
+            ...data,
+            updatedAt: new Date()
+          });
+        },
+        delete: async (id: string) => {
+          // Mock implementation
+          return true;
         }
       }
     }
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UsersController],
   exports: [AuthService, JwtModule, RolesGuard],
 })
 export class AuthModule {}
