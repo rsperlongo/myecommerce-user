@@ -35,59 +35,63 @@ import { v4 as uuidv4 } from 'uuid';
   ],
   providers: [
     // Services
-    AuthService, 
-    JwtStrategy, 
+    AuthService,
+    JwtStrategy,
     RolesGuard,
-    
+
     // Use Cases
     CreateUserWithRolesUseCase,
     GetUsersUseCase,
     GetUserByIdUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
-    
+
     // Repository Mock (TODO: Substituir por implementação real)
     {
       provide: 'IUserRepository',
       useValue: {
-        findByEmail: async (email: string) => {
+        findByEmail: () => {
           // Mock implementation - sempre retorna null para permitir criação
-          return null;
+          return Promise.resolve(null);
         },
-        save: async (email: string, passwordHash: string) => {
+        save: (email: string, passwordHash: string) => {
           // Mock implementation que retorna um UserEntity válido
-          return new UserEntity({
-            id: uuidv4(),
-            email,
-            password: passwordHash,
-            roles: [UserRole.USER],
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+          return Promise.resolve(
+            new UserEntity({
+              id: uuidv4(),
+              email,
+              password: passwordHash,
+              roles: [UserRole.USER],
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }),
+          );
         },
-        findById: async (id: string) => {
+        findById: () => {
           // Mock implementation
-          return null;
+          return Promise.resolve(null);
         },
-        findAll: async (filters: any) => {
+        findAll: () => {
           // Mock implementation
-          return [];
+          return Promise.resolve([]);
         },
-        update: async (id: string, data: any) => {
+        update: (id: string, data: unknown) => {
           // Mock implementation
-          return new UserEntity({
-            id,
-            ...data,
-            updatedAt: new Date()
-          });
+          return Promise.resolve(
+            new UserEntity({
+              id,
+              ...(data as object),
+              updatedAt: new Date(),
+            }),
+          );
         },
-        delete: async (id: string) => {
+        delete: () => {
           // Mock implementation
-          return true;
-        }
-      }
-    }
+          return Promise.resolve(true);
+        },
+      },
+    },
   ],
   controllers: [AuthController, UsersController],
   exports: [AuthService, JwtModule, RolesGuard],

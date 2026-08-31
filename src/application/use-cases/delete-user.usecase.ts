@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserEntity } from '../../domain/entities/user.entity';
 import { UserRole, hasPermission } from '../../domain/enums/user-role.enum';
 import { InsufficientPermissionsException } from '../../domain/exceptions/insufficient-permissions.exception';
@@ -13,28 +18,28 @@ export interface DeleteUserRequest {
 @Injectable()
 export class DeleteUserUseCase {
   constructor(
-    @Inject('IUserRepository') private readonly userRepository: IUserRepository
+    @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(request: DeleteUserRequest): Promise<{ message: string; deletedUser: UserEntity }> {
-    const deleterRole = request.deletedBy.getHighestRole();
-    
+  execute(
+    request: DeleteUserRequest,
+  ): Promise<{ message: string; deletedUser: UserEntity }> {
     // Verificar permissões básicas: apenas ADMIN pode deletar usuários
-    if (!hasPermission(deleterRole, UserRole.ADMIN)) {
+    if (!hasPermission(request.deletedBy.getHighestRole(), UserRole.ADMIN)) {
       throw new InsufficientPermissionsException(
         'Permission to delete users (requires ADMIN)',
-        deleterRole
+        deleterRole,
       );
     }
 
     // Buscar o usuário a ser deletado
-    const targetUser = await this.findUserById(request.userId);
+    const targetUser = this.findUserById(request.userId);
     if (!targetUser) {
       throw new NotFoundException(`User with ID ${request.userId} not found`);
     }
 
     // Validações de segurança
-    await this.validateDeletion(request.deletedBy, targetUser);
+    this.validateDeletion(request.deletedBy, targetUser);
 
     // Executar deleção
     if (request.softDelete !== false) {
@@ -58,65 +63,71 @@ export class DeleteUserUseCase {
     }
   }
 
-  private async validateDeletion(deleter: UserEntity, targetUser: UserEntity): Promise<void> {
+  private validateDeletion(deleter: UserEntity, targetUser: UserEntity): void {
     // Não permitir auto-deleção
     if (deleter.id === targetUser.id) {
       throw new BadRequestException('Cannot delete your own account');
     }
 
     // Verificar se existem dependências (exemplo: pedidos, transações, etc.)
-    const hasDependencies = await this.checkUserDependencies(targetUser.id);
+    const hasDependencies = this.checkUserDependencies(targetUser.id);
     if (hasDependencies) {
       throw new BadRequestException(
-        'Cannot delete user with existing dependencies. Use soft delete (deactivate) instead.'
+        'Cannot delete user with existing dependencies. Use soft delete (deactivate) instead.',
       );
     }
 
     // Regras específicas por role do usuário alvo
     const targetRole = targetUser.getHighestRole();
-    const deleterRole = deleter.getHighestRole();
 
     // Validações adicionais baseadas em roles
     if (targetRole === UserRole.ADMIN) {
       // Verificar se não é o último admin
-      const adminCount = await this.countActiveAdmins();
+      const adminCount = this.countActiveAdmins();
       if (adminCount <= 1) {
         throw new BadRequestException('Cannot delete the last admin user');
       }
     }
 
     // Log da ação para auditoria
-    await this.logDeletionAttempt(deleter, targetUser);
+    this.logDeletionAttempt(request.deletedBy, targetUser);
   }
 
-  private async checkUserDependencies(userId: string): Promise<boolean> {
+  private checkUserDependencies(userId: string): boolean {
     // Mock implementation - em produção verificaria:
     // - Pedidos realizados
-    // - Transações financeiras  
+    // - Transações financeiras
     // - Dados históricos importantes
     // - Relacionamentos com outros usuários
-    
+
     // Por enquanto, simular que usuários ativos há mais de 30 dias têm dependências
-    const user = await this.findUserById(userId);
+    const user = this.findUserById(userId);
     if (user && user.createdAt) {
-      const daysSinceCreation = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+      const daysSinceCreation = Math.floor(
+        (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+      );
       return daysSinceCreation > 30;
     }
-    
+
     return false;
   }
 
-  private async countActiveAdmins(): Promise<number> {
+  private countActiveAdmins(): number {
     // Mock implementation - em produção consultaria o banco
     return 2; // Simulando que existem 2 admins ativos
   }
 
-  private async logDeletionAttempt(deleter: UserEntity, targetUser: UserEntity): Promise<void> {
+  private logDeletionAttempt(
+    deleter: UserEntity,
+    targetUser: UserEntity,
+  ): void {
     // Mock implementation - em produção salvaria em log de auditoria
-    console.log(`User deletion attempt: ${deleter.email} attempting to delete ${targetUser.email} (ID: ${targetUser.id})`);
+    console.log(
+      `User deletion attempt: ${deleter.email} attempting to delete ${targetUser.email} (ID: ${targetUser.id})`,
+    );
   }
 
-  private async findUserById(userId: string): Promise<UserEntity | null> {
+  private findUserById(userId: string): UserEntity | null {
     // Mock implementation
     const mockUsers = {
       '1': new UserEntity({

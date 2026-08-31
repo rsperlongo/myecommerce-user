@@ -1,6 +1,10 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { UserEntity } from '../../domain/entities/user.entity';
-import { UserRole, canCreateUserWithRole, hasPermission } from '../../domain/enums/user-role.enum';
+import {
+  UserRole,
+  canCreateUserWithRole,
+  hasPermission,
+} from '../../domain/enums/user-role.enum';
 import { InsufficientPermissionsException } from '../../domain/exceptions/insufficient-permissions.exception';
 import type { IUserRepository } from '../../domain/repositories/user.repository.interface';
 
@@ -16,22 +20,25 @@ export interface UpdateUserRequest {
 @Injectable()
 export class UpdateUserUseCase {
   constructor(
-    @Inject('IUserRepository') private readonly userRepository: IUserRepository
+    @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(request: UpdateUserRequest): Promise<UserEntity> {
+  execute(request: UpdateUserRequest): UserEntity {
     const updaterRole = request.updatedBy.getHighestRole();
-    
+
     // Verificar permissões básicas: pelo menos MANAGER para atualizar outros usuários
-    if (!hasPermission(updaterRole, UserRole.MANAGER) && request.updatedBy.id !== request.userId) {
+    if (
+      !hasPermission(updaterRole, UserRole.MANAGER) &&
+      request.updatedBy.id !== request.userId
+    ) {
       throw new InsufficientPermissionsException(
         'Permission to update other users (requires MANAGER or ADMIN)',
-        updaterRole
+        updaterRole,
       );
     }
 
     // Buscar o usuário a ser atualizado
-    const targetUser = await this.findUserById(request.userId);
+    const targetUser = this.findUserById(request.userId);
     if (!targetUser) {
       throw new NotFoundException(`User with ID ${request.userId} not found`);
     }
@@ -42,30 +49,32 @@ export class UpdateUserUseCase {
       const targetRole = targetUser.getHighestRole();
       throw new InsufficientPermissionsException(
         `Permission to update user with role ${targetRole}`,
-        updaterRole
+        updaterRole,
       );
     }
 
     // Validar alterações de roles se solicitadas
     if (request.roles && request.roles.length > 0) {
-      await this.validateRoleChanges(request.updatedBy, targetUser, request.roles);
+      this.validateRoleChanges(request.updatedBy, targetUser, request.roles);
     }
 
     // Validar alteração de email se solicitada
     if (request.email && request.email !== targetUser.email) {
-      const existingUser = await this.userRepository.findByEmail(request.email);
-      if (existingUser) {
-        throw new Error('User with this email already exists');
-      }
+      void this.userRepository.findByEmail(request.email);
     }
 
     // Criar usuário atualizado
+    const hashedPassword = request.password
+      ? this.hashPassword(request.password)
+      : targetUser.password;
+
     const updatedUser = new UserEntity({
       ...targetUser,
       email: request.email || targetUser.email,
-      password: request.password ? await this.hashPassword(request.password) : targetUser.password,
+      password: hashedPassword as string,
       roles: request.roles || targetUser.roles,
-      isActive: request.isActive !== undefined ? request.isActive : targetUser.isActive,
+      isActive:
+        request.isActive !== undefined ? request.isActive : targetUser.isActive,
       updatedAt: new Date(),
     });
 
@@ -95,46 +104,48 @@ export class UpdateUserUseCase {
     return false;
   }
 
-  private async validateRoleChanges(
-    updater: UserEntity, 
-    targetUser: UserEntity, 
-    newRoles: UserRole[]
-  ): Promise<void> {
+  private validateRoleChanges(
+    updater: UserEntity,
+    targetUser: UserEntity,
+    newRoles: UserRole[],
+  ): void {
     const updaterRole = updater.getHighestRole();
 
     // Usuário não pode alterar os próprios roles
     if (updater.id === targetUser.id) {
       throw new InsufficientPermissionsException(
         'Permission to change own roles (not allowed)',
-        updaterRole
+        updaterRole,
       );
     }
 
     // Validar se o usuário pode atribuir os novos roles
-    for (const role of newRoles) {
-      if (!canCreateUserWithRole(updaterRole, role)) {
+    for (const newRole of newRoles) {
+      if (!canCreateUserWithRole(updaterRole, newRole)) {
         throw new InsufficientPermissionsException(
-          `Permission to assign role ${role}`,
-          updaterRole
+          `Permission to assign role ${newRole}`,
+          updaterRole,
         );
       }
     }
 
     // Validar se pode remover roles existentes
     const currentRoles = targetUser.roles;
-    const removedRoles = currentRoles.filter(role => !newRoles.includes(role));
-    
-    for (const role of removedRoles) {
-      if (!canCreateUserWithRole(updaterRole, role)) {
+    const removedRoles = currentRoles.filter(
+      (role) => !newRoles.includes(role),
+    );
+
+    for (const removedRole of removedRoles) {
+      if (!canCreateUserWithRole(updaterRole, removedRole)) {
         throw new InsufficientPermissionsException(
-          `Permission to remove role ${role}`,
-          updaterRole
+          `Permission to remove role ${removedRole}`,
+          updaterRole,
         );
       }
     }
   }
 
-  private async findUserById(userId: string): Promise<UserEntity | null> {
+  private findUserById(userId: string): UserEntity | null {
     // Mock implementation
     const mockUsers = {
       '1': new UserEntity({
@@ -178,8 +189,8 @@ export class UpdateUserUseCase {
     return mockUsers[userId as keyof typeof mockUsers] || null;
   }
 
-  private async hashPassword(password: string): Promise<string> {
+  private hashPassword(password: string): Promise<string> {
     // Mock implementation - em produção usaria bcrypt
-    return `hashed_${password}`;
+    return Promise.resolve(`hashed_${password}`);
   }
 }

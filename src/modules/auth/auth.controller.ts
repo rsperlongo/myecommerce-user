@@ -1,11 +1,10 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  UseGuards, 
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
   Get,
   BadRequestException,
-  UnauthorizedException 
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthGuard } from '@nestjs/passport';
@@ -23,7 +22,7 @@ import { InsufficientPermissionsException } from '../../domain/exceptions/insuff
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly createUserWithRolesUseCase: CreateUserWithRolesUseCase
+    private readonly createUserWithRolesUseCase: CreateUserWithRolesUseCase,
   ) {}
 
   @Post('register')
@@ -31,21 +30,23 @@ export class AuthController {
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.USER)
   async register(
     @Body() createUserDto: CreateUserDto,
-    @CurrentUser() currentUser: UserEntity
+    @CurrentUser() currentUser: UserEntity,
   ) {
     try {
       // Hash da senha
-      const hashedPassword = await this.authService.hashPassword(createUserDto.password);
-      
+      const hashedPassword = await this.authService.hashPassword(
+        createUserDto.password,
+      );
+
       // Definir roles padrão se não especificado
       const roles = createUserDto.roles || [UserRole.USER];
-      
+
       // Criar usuário usando o use case que valida permissões
       const newUser = await this.createUserWithRolesUseCase.execute({
         email: createUserDto.email,
         password: hashedPassword,
         roles,
-        createdBy: currentUser
+        createdBy: currentUser,
       });
 
       return {
@@ -53,7 +54,7 @@ export class AuthController {
         id: newUser.id,
         email: newUser.email,
         roles: newUser.roles,
-        createdBy: currentUser.email
+        createdBy: currentUser.email,
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
@@ -66,8 +67,10 @@ export class AuthController {
   @Post('register/public')
   async registerPublic(@Body() createUserDto: CreateUserDto) {
     // Registro público só permite criar usuários com role USER
-    const hashedPassword = await this.authService.hashPassword(createUserDto.password);
-    
+    const hashedPassword = await this.authService.hashPassword(
+      createUserDto.password,
+    );
+
     // Para registro público, criar um usuário "sistema" temporário para validação
     const systemUser = new UserEntity({
       id: 'system',
@@ -76,7 +79,7 @@ export class AuthController {
       roles: [UserRole.ADMIN], // Sistema tem permissão total
       isActive: true,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
 
     try {
@@ -84,17 +87,17 @@ export class AuthController {
         email: createUserDto.email,
         password: hashedPassword,
         roles: [UserRole.USER], // Apenas role USER para registro público
-        createdBy: systemUser
+        createdBy: systemUser,
       });
 
       return {
         message: 'User registered successfully',
         id: newUser.id,
         email: newUser.email,
-        roles: newUser.roles
+        roles: newUser.roles,
       };
     } catch (error) {
-      if (error.message.includes('already exists')) {
+      if (error instanceof Error && error.message.includes('already exists')) {
         throw new BadRequestException('User with this email already exists');
       }
       throw error;
@@ -102,7 +105,7 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() credentials: { email: string; password: string }) {
+  login(@Body() credentials: { email: string; password: string }) {
     // TODO: Implementar validação real de login
     // Por enquanto, simulando um usuário válido
     const mockUser = new UserEntity({
@@ -112,44 +115,45 @@ export class AuthController {
       roles: [UserRole.USER],
       isActive: true,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
 
     const token = this.authService.generateToken(mockUser);
-    return { 
+    return {
       access_token: token,
       user: {
         id: mockUser.id,
         email: mockUser.email,
-        roles: mockUser.roles
-      }
+        roles: mockUser.roles,
+      },
     };
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
-  getProfile(@CurrentUser() user: any) {
-    return { 
+  getProfile(@CurrentUser() user: Record<string, unknown>) {
+    return {
       message: 'User profile',
       user: {
         id: user.userId,
         email: user.email,
         roles: user.roles,
-        isActive: user.isActive
-      }
+        isActive: user.isActive,
+      },
     };
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Get('available-roles')
-  getAvailableRoles(@CurrentUser() user: any) {
-    const currentUserRole = user.roles[0]; // Assumindo que o primeiro role é o principal
-    const availableRoles = this.createUserWithRolesUseCase.getAvailableRolesForUser(currentUserRole);
-    
+  getAvailableRoles(@CurrentUser() user: Record<string, unknown>) {
+    const currentUserRole = (user.roles as UserRole[])[0]; // Assumindo que o primeiro role é o principal
+    const availableRoles =
+      this.createUserWithRolesUseCase.getAvailableRolesForUser(currentUserRole);
+
     return {
       availableRoles,
-      currentUserRole
+      currentUserRole,
     };
   }
 }

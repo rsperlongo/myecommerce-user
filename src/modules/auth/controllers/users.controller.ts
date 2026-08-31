@@ -58,11 +58,13 @@ export class UsersController {
   ) {
     try {
       // Hash da senha
-      const hashedPassword = await this.authService.hashPassword(createUserDto.password);
-      
+      const hashedPassword = await this.authService.hashPassword(
+        createUserDto.password,
+      );
+
       // Definir roles padrão se não especificado
       const roles = createUserDto.roles || [UserRole.USER];
-      
+
       // Criar usuário usando o use case que valida permissões
       const newUser = await this.createUserUseCase.execute({
         email: createUserDto.email,
@@ -94,12 +96,12 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  async getUsers(
+  getUsers(
     @Query() query: QueryUsersDto,
     @CurrentUser() currentUser: UserEntity,
   ) {
     try {
-      const result = await this.getUsersUseCase.execute({
+      const result = this.getUsersUseCase.execute({
         requestedBy: currentUser,
         page: query.page,
         limit: query.limit,
@@ -112,7 +114,7 @@ export class UsersController {
 
       return {
         message: 'Users retrieved successfully',
-        data: result.users.map(user => UserResponseDto.fromEntity(user)),
+        data: result.users.map((user) => UserResponseDto.fromEntity(user)),
         pagination: {
           total: result.total,
           page: result.page,
@@ -133,12 +135,9 @@ export class UsersController {
    * Permissões: ADMIN (todos), MANAGER (USER, GUEST), USER (GUEST + próprio), próprio usuário
    */
   @Get(':id')
-  async getUserById(
-    @Param('id') id: string,
-    @CurrentUser() currentUser: UserEntity,
-  ) {
+  getUserById(@Param('id') id: string, @CurrentUser() currentUser: UserEntity) {
     try {
-      const user = await this.getUserByIdUseCase.execute({
+      const user = this.getUserByIdUseCase.execute({
         userId: id,
         requestedBy: currentUser,
       });
@@ -170,11 +169,11 @@ export class UsersController {
   ) {
     try {
       // Hash da nova senha se fornecida
-      const hashedPassword = updateUserDto.password 
+      const hashedPassword = updateUserDto.password
         ? await this.authService.hashPassword(updateUserDto.password)
         : undefined;
 
-      const updatedUser = await this.updateUserUseCase.execute({
+      const updatedUser = this.updateUserUseCase.execute({
         userId: id,
         email: updateUserDto.email,
         password: hashedPassword,
@@ -244,12 +243,12 @@ export class UsersController {
   @Post(':id/reactivate')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  async reactivateUser(
+  reactivateUser(
     @Param('id') id: string,
     @CurrentUser() currentUser: UserEntity,
   ) {
     try {
-      const reactivatedUser = await this.updateUserUseCase.execute({
+      const reactivatedUser = this.updateUserUseCase.execute({
         userId: id,
         isActive: true,
         updatedBy: currentUser,
@@ -278,10 +277,10 @@ export class UsersController {
   @Get('stats/summary')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  async getUserStats(@CurrentUser() currentUser: UserEntity) {
+  getUserStats(@CurrentUser() currentUser: UserEntity) {
     // Mock implementation
     const requesterRole = currentUser.getHighestRole();
-    
+
     let stats;
     if (requesterRole === UserRole.ADMIN) {
       stats = {

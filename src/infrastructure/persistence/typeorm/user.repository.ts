@@ -3,13 +3,13 @@ import { UserEntity } from '../../../domain/entities/user.entity';
 
 @Injectable()
 export class UserRepository {
-  async save(user: UserEntity): Promise<UserEntity> {
+  save(user: UserEntity): Promise<UserEntity> {
     // TODO: implement TypeORM save logic
-    return user;
+    return Promise.resolve(user);
   }
 
-  async findByEmail(email: string): Promise<UserEntity | null> {
+  findByEmail(): Promise<UserEntity | null> {
     // TODO: implement TypeORM find logic
-    return null;
+    return Promise.resolve(null);
   }
 }

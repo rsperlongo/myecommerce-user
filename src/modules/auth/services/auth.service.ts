@@ -21,7 +21,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       roles: user.roles,
-      isActive: user.isActive
+      isActive: user.isActive,
     };
     return this.jwtService.sign(payload);
   }

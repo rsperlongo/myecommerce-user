@@ -11,7 +11,7 @@ export class CreateUserUseCase {
       roles: [UserRole.USER],
       isActive: true,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
   }
 }

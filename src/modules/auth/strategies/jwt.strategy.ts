@@ -15,11 +15,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     await Promise.resolve();
-    return { 
-      userId: payload.sub, 
-      email: payload.email, 
+    return {
+      userId: payload.sub,
+      email: payload.email,
       roles: payload.roles || [UserRole.USER],
-      isActive: payload.isActive || true
+      isActive: payload.isActive || true,
     };
   }
 }

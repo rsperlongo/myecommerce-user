@@ -12,33 +12,33 @@ export interface GetUserByIdRequest {
 @Injectable()
 export class GetUserByIdUseCase {
   constructor(
-    @Inject('IUserRepository') private readonly userRepository: IUserRepository
+    @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(request: GetUserByIdRequest): Promise<UserEntity> {
+  execute(request: GetUserByIdRequest): UserEntity {
     const requesterRole = request.requestedBy.getHighestRole();
-    
+
     // Verificar permissões básicas: ADMIN, MANAGER ou o próprio usuário
     if (!hasPermission(requesterRole, UserRole.USER)) {
       throw new InsufficientPermissionsException(
         'Permission to view user details',
-        requesterRole
+        requesterRole,
       );
     }
 
     // Buscar o usuário
-    const targetUser = await this.findUserById(request.userId);
+    const targetUser = this.findUserById(request.userId);
     if (!targetUser) {
       throw new NotFoundException(`User with ID ${request.userId} not found`);
     }
 
     // Verificar se o usuário pode visualizar este registro específico
     const canViewUser = this.canViewUser(request.requestedBy, targetUser);
-    
+
     if (!canViewUser) {
       throw new InsufficientPermissionsException(
         `Permission to view user with roles: ${targetUser.roles.join(', ')}`,
-        requesterRole
+        requesterRole,
       );
     }
 
@@ -72,7 +72,7 @@ export class GetUserByIdUseCase {
     return false;
   }
 
-  private async findUserById(userId: string): Promise<UserEntity | null> {
+  private findUserById(userId: string): UserEntity | null {
     // Mock implementation
     const mockUsers = {
       '1': new UserEntity({

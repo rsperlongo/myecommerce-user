@@ -20,11 +20,16 @@ export class UserEntity {
   }
 
   hasAnyRole(roles: UserRole[]): boolean {
-    return roles.some(role => this.roles.includes(role));
+    return roles.some((role) => this.roles.includes(role));
   }
 
   getHighestRole(): UserRole {
-    const roleOrder = [UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.GUEST];
+    const roleOrder = [
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+      UserRole.USER,
+      UserRole.GUEST,
+    ];
     for (const role of roleOrder) {
       if (this.roles.includes(role)) {
         return role;

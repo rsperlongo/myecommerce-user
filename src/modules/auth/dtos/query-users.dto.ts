@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsNumber, Min, Max, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  IsArray,
+  IsBoolean,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { UserRole } from '../../../domain/enums/user-role.enum';
 
@@ -24,7 +32,7 @@ export class QueryUsersDto {
   @IsArray()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
-      return value.split(',').map(role => role.trim());
+      return value.split(',').map((role) => role.trim());
     }
     return value;
   })

@@ -26,26 +26,31 @@ export interface GetUsersResponse {
 @Injectable()
 export class GetUsersUseCase {
   constructor(
-    @Inject('IUserRepository') private readonly userRepository: IUserRepository
+    @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(request: GetUsersRequest): Promise<GetUsersResponse> {
+  execute(request: GetUsersRequest): GetUsersResponse {
     // Verificar permissões: apenas ADMIN e MANAGER podem listar usuários
     const requesterRole = request.requestedBy.getHighestRole();
-    
+
     if (!hasPermission(requesterRole, UserRole.MANAGER)) {
       throw new InsufficientPermissionsException(
         'Permission to list users (requires MANAGER or ADMIN)',
-        requesterRole
+        requesterRole,
       );
     }
 
     // MANAGER só pode ver usuários com roles inferiores (USER, GUEST)
     // ADMIN pode ver todos os usuários
     let allowedRoles: UserRole[] = [];
-    
+
     if (requesterRole === UserRole.ADMIN) {
-      allowedRoles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.GUEST];
+      allowedRoles = [
+        UserRole.ADMIN,
+        UserRole.MANAGER,
+        UserRole.USER,
+        UserRole.GUEST,
+      ];
     } else if (requesterRole === UserRole.MANAGER) {
       allowedRoles = [UserRole.USER, UserRole.GUEST];
     }
@@ -53,28 +58,27 @@ export class GetUsersUseCase {
     // Se roles específicos foram solicitados, validar se o usuário pode visualizá-los
     let rolesToFilter = request.roles;
     if (rolesToFilter) {
-      const unauthorizedRoles = rolesToFilter.filter(role => !allowedRoles.includes(role));
+      const unauthorizedRoles = rolesToFilter.filter(
+        (role) => !allowedRoles.includes(role),
+      );
       if (unauthorizedRoles.length > 0) {
         throw new InsufficientPermissionsException(
           `Permission to view users with roles: ${unauthorizedRoles.join(', ')}`,
-          requesterRole
+          requesterRole,
         );
       }
     } else {
       rolesToFilter = allowedRoles;
     }
 
-    // Aplicar filtros com base nas permissões
-    const filters = {
-      ...request,
-      roles: rolesToFilter,
-    };
-
     // Simular busca paginada (implementação real dependeria do repository)
-    const mockUsers = this.generateMockUsers(filters);
-    
+    const mockUsers = this.generateMockUsers(rolesToFilter);
+
     return {
-      users: mockUsers.slice(((request.page || 1) - 1) * (request.limit || 10), (request.page || 1) * (request.limit || 10)),
+      users: mockUsers.slice(
+        ((request.page || 1) - 1) * (request.limit || 10),
+        (request.page || 1) * (request.limit || 10),
+      ),
       total: mockUsers.length,
       page: request.page || 1,
       limit: request.limit || 10,
@@ -82,7 +86,7 @@ export class GetUsersUseCase {
     };
   }
 
-  private generateMockUsers(filters: any): UserEntity[] {
+  private generateMockUsers(allowedRoles: UserRole[]): UserEntity[] {
     // Mock implementation - em produção isso viria do repository
     const mockUsers: UserEntity[] = [
       new UserEntity({
@@ -123,22 +127,12 @@ export class GetUsersUseCase {
       }),
     ];
 
-    return mockUsers.filter(user => {
+    return mockUsers.filter((user) => {
       // Filtrar por roles permitidos
-      const hasAllowedRole = user.roles.some(role => filters.roles.includes(role));
-      if (!hasAllowedRole) return false;
-
-      // Filtrar por status ativo
-      if (filters.isActive !== undefined && user.isActive !== filters.isActive) {
-        return false;
-      }
-
-      // Filtrar por busca de email
-      if (filters.search && !user.email.toLowerCase().includes(filters.search.toLowerCase())) {
-        return false;
-      }
-
-      return true;
+      const hasAllowedRole = user.roles.some((role) =>
+        allowedRoles.includes(role),
+      );
+      return hasAllowedRole;
     });
   }
 }
