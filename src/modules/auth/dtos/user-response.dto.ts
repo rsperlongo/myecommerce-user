@@ -1,12 +1,12 @@
 import { UserRole } from '../../../domain/enums/user-role.enum';
 
 export class UserResponseDto {
-  id: string;
-  email: string;
-  roles: UserRole[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  id!: string;
+  email!: string;
+  roles!: UserRole[];
+  isActive!: boolean;
+  createdAt!: Date;
+  updatedAt!: Date;
 
   constructor(partial: Partial<UserResponseDto>) {
     Object.assign(this, partial);

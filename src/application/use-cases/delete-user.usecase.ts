@@ -21,14 +21,14 @@ export class DeleteUserUseCase {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  execute(
+  async execute(
     request: DeleteUserRequest,
   ): Promise<{ message: string; deletedUser: UserEntity }> {
     // Verificar permissões básicas: apenas ADMIN pode deletar usuários
     if (!hasPermission(request.deletedBy.getHighestRole(), UserRole.ADMIN)) {
       throw new InsufficientPermissionsException(
         'Permission to delete users (requires ADMIN)',
-        deleterRole,
+        request.deletedBy.getHighestRole(),
       );
     }
 
@@ -90,7 +90,7 @@ export class DeleteUserUseCase {
     }
 
     // Log da ação para auditoria
-    this.logDeletionAttempt(request.deletedBy, targetUser);
+    this.logDeletionAttempt(deleter, targetUser);
   }
 
   private checkUserDependencies(userId: string): boolean {

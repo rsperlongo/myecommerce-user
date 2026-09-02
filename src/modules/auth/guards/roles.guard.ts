@@ -28,9 +28,7 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated or roles not found');
     }
 
-    const userHighestRole = this.getHighestRole(
-      user.roles as UserRole[] | undefined,
-    );
+    const userHighestRole = this.getHighestRole(user.roles as UserRole[]);
     const hasRequiredPermission = requiredRoles.some((role) =>
       hasPermission(userHighestRole, role),
     );
@@ -44,7 +42,7 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 
-  private getHighestRole(userRoles: UserRole[] | undefined): UserRole {
+  private getHighestRole(userRoles: UserRole[]): UserRole {
     const roleOrder = [
       UserRole.ADMIN,
       UserRole.MANAGER,
