@@ -85,7 +85,7 @@ export class UsersController {
       if (error instanceof InsufficientPermissionsException) {
         throw new BadRequestException(error.message);
       }
-      if (error.message.includes('already exists')) {
+      if (error instanceof Error && error.message.includes('already exists')) {
         throw new BadRequestException('User with this email already exists');
       }
       throw error;
@@ -197,7 +197,7 @@ export class UsersController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      if (error.message.includes('already exists')) {
+      if (error instanceof Error && error.message.includes('already exists')) {
         throw new BadRequestException('User with this email already exists');
       }
       throw error;
