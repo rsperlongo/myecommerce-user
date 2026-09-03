@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Automated Code Review",
+      "trigger": "PostFileSave",
+      "description": "Automatically runs code review when TypeScript files are saved",
+      "matcher": "\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "node .kiro/agents/review-script.js \"${KIRO_FILE_PATH}\" > /tmp/kiro-review.log 2>&1 && echo \"✅ Code review completed for ${KIRO_FILE_PATH}\" || echo \"⚠️ Code review failed for ${KIRO_FILE_PATH}\"",
+        "timeout": 30
+      }
+    }
+  ]
+}
