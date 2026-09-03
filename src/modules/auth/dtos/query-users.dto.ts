@@ -8,15 +8,18 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../domain/enums/user-role.enum';
 
 export class QueryUsersDto {
+  @ApiPropertyOptional({ example: 1, minimum: 1, default: 1 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   @Min(1)
   page?: number = 1;
 
+  @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100, default: 10 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -24,10 +27,12 @@ export class QueryUsersDto {
   @Max(100)
   limit?: number = 10;
 
+  @ApiPropertyOptional({ example: 'maria' })
   @IsOptional()
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({ enum: UserRole, isArray: true })
   @IsOptional()
   @IsArray()
   @Transform(({ value }) => {
@@ -38,6 +43,7 @@ export class QueryUsersDto {
   })
   roles?: UserRole[];
 
+  @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => {
@@ -48,10 +54,15 @@ export class QueryUsersDto {
   })
   isActive?: boolean;
 
+  @ApiPropertyOptional({
+    enum: ['email', 'createdAt', 'updatedAt'],
+    default: 'createdAt',
+  })
   @IsOptional()
   @IsString()
   sortBy?: 'email' | 'createdAt' | 'updatedAt' = 'createdAt';
 
+  @ApiPropertyOptional({ enum: ['ASC', 'DESC'], default: 'DESC' })
   @IsOptional()
   @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'DESC';

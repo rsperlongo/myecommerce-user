@@ -13,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
@@ -35,6 +36,8 @@ import { InsufficientPermissionsException } from '../../../domain/exceptions/ins
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'))
+@ApiTags('Users')
+@ApiBearerAuth()
 export class UsersController {
   constructor(
     private readonly authService: AuthService,

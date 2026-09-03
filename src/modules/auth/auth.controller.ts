@@ -6,6 +6,7 @@ import {
   Get,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './services/auth.service';
@@ -17,8 +18,10 @@ import { UserRole } from '../../domain/enums/user-role.enum';
 import { UserEntity } from '../../domain/entities/user.entity';
 import { CreateUserWithRolesUseCase } from '../../application/use-cases/create-user-with-roles.usecase';
 import { InsufficientPermissionsException } from '../../domain/exceptions/insufficient-permissions.exception';
+import { LoginDto } from './dtos/login.dto';
 
 @Controller('auth')
+@ApiTags('Auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
@@ -26,6 +29,7 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.USER)
   async register(
@@ -105,7 +109,7 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() credentials: { email: string; password: string }) {
+  login(@Body() credentials: LoginDto) {
     // TODO: Implementar validação real de login
     // Por enquanto, simulando um usuário válido
     const mockUser = new UserEntity({
@@ -131,6 +135,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
+  @ApiBearerAuth()
   getProfile(@CurrentUser() user: Record<string, unknown>) {
     return {
       message: 'User profile',
@@ -146,6 +151,7 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Get('available-roles')
+  @ApiBearerAuth()
   getAvailableRoles(@CurrentUser() user: Record<string, unknown>) {
     const currentUserRole = (user.roles as UserRole[])[0]; // Assumindo que o primeiro role é o principal
     const availableRoles =
