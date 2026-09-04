@@ -9,6 +9,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { InitialUsersMigration20260904191000 } from './infrastructure/persistence/typeorm/migrations/initial-users.migration';
 
 @Module({
   imports: [
@@ -34,6 +35,8 @@ import { AuthModule } from './modules/auth/auth.module';
         database: config.get<string>('POSTGRES_DB') || 'mycommerce',
         autoLoadEntities: true,
         synchronize: false,
+        migrationsRun: true,
+        migrations: [InitialUsersMigration20260904191000],
       }),
     }),
     MongooseModule.forRoot(
