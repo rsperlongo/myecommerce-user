@@ -5,9 +5,9 @@ import {
   UseGuards,
   Get,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { v4 as uuidv4 } from 'uuid';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './services/auth.service';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -62,7 +62,7 @@ export class AuthController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       throw error;
     }
@@ -109,26 +109,18 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() credentials: LoginDto) {
-    // TODO: Implementar validação real de login
-    // Por enquanto, simulando um usuário válido
-    const mockUser = new UserEntity({
-      id: uuidv4(),
-      email: credentials.email,
-      password: '',
-      roles: [UserRole.USER],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const token = this.authService.generateToken(mockUser);
+  async login(@Body() credentials: LoginDto) {
+    const user = await this.authService.authenticate(
+      credentials.email,
+      credentials.password,
+    );
+    const token = this.authService.generateToken(user);
     return {
       access_token: token,
       user: {
-        id: mockUser.id,
-        email: mockUser.email,
-        roles: mockUser.roles,
+        id: user.id,
+        email: user.email,
+        roles: user.roles,
       },
     };
   }

@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../../domain/entities/user.entity';
 import {
   UserRole,
@@ -23,7 +24,7 @@ export class UpdateUserUseCase {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  execute(request: UpdateUserRequest): UserEntity {
+  async execute(request: UpdateUserRequest): Promise<UserEntity> {
     const updaterRole = request.updatedBy.getHighestRole();
 
     // Verificar permissões básicas: pelo menos MANAGER para atualizar outros usuários
@@ -38,7 +39,7 @@ export class UpdateUserUseCase {
     }
 
     // Buscar o usuário a ser atualizado
-    const targetUser = this.findUserById(request.userId);
+    const targetUser = await this.userRepository.findById(request.userId);
     if (!targetUser) {
       throw new NotFoundException(`User with ID ${request.userId} not found`);
     }
@@ -60,26 +61,31 @@ export class UpdateUserUseCase {
 
     // Validar alteração de email se solicitada
     if (request.email && request.email !== targetUser.email) {
-      void this.userRepository.findByEmail(request.email);
+      const existingUser = await this.userRepository.findByEmail(request.email);
+      if (existingUser && existingUser.id !== request.userId) {
+        throw new Error('User with this email already exists');
+      }
     }
 
     // Criar usuário atualizado
-    const hashedPassword = request.password
-      ? this.hashPassword(request.password)
+    const password = request.password
+      ? await this.hashPassword(request.password)
       : targetUser.password;
 
     const updatedUser = new UserEntity({
       ...targetUser,
       email: request.email || targetUser.email,
-      password: hashedPassword as string,
+      password,
       roles: request.roles || targetUser.roles,
       isActive:
         request.isActive !== undefined ? request.isActive : targetUser.isActive,
       updatedAt: new Date(),
     });
 
-    // Salvar alterações (mock implementation)
-    return updatedUser;
+    return (
+      (await this.userRepository.update(request.userId, updatedUser)) ??
+      updatedUser
+    );
   }
 
   private canUpdateUser(updater: UserEntity, targetUser: UserEntity): boolean {
@@ -145,52 +151,7 @@ export class UpdateUserUseCase {
     }
   }
 
-  private findUserById(userId: string): UserEntity | null {
-    // Mock implementation
-    const mockUsers = {
-      '1': new UserEntity({
-        id: '1',
-        email: 'admin@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.ADMIN],
-        isActive: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      }),
-      '2': new UserEntity({
-        id: '2',
-        email: 'manager@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.MANAGER],
-        isActive: true,
-        createdAt: new Date('2024-01-02'),
-        updatedAt: new Date('2024-01-02'),
-      }),
-      '3': new UserEntity({
-        id: '3',
-        email: 'user@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.USER],
-        isActive: true,
-        createdAt: new Date('2024-01-03'),
-        updatedAt: new Date('2024-01-03'),
-      }),
-      '4': new UserEntity({
-        id: '4',
-        email: 'guest@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.GUEST],
-        isActive: false,
-        createdAt: new Date('2024-01-04'),
-        updatedAt: new Date('2024-01-04'),
-      }),
-    };
-
-    return mockUsers[userId as keyof typeof mockUsers] || null;
-  }
-
   private hashPassword(password: string): Promise<string> {
-    // Mock implementation - em produção usaria bcrypt
-    return Promise.resolve(`hashed_${password}`);
+    return bcrypt.hash(password, 10);
   }
 }

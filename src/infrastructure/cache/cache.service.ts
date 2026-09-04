@@ -10,7 +10,7 @@ export class CacheService {
     this.redisClient = this.redisService.getOrThrow();
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
+  async set(key: string, value: unknown, ttl?: number): Promise<void> {
     if (ttl) {
       await this.redisClient.setex(key, ttl, JSON.stringify(value));
     } else {

@@ -7,7 +7,7 @@ export class RabbitMQClient {
     @Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy,
   ) {}
 
-  async emitUserCreated(payload: any) {
-    return this.client.emit('user.created', payload).toPromise();
+  async emitUserCreated(payload: unknown): Promise<void> {
+    await this.client.emit('user.created', payload).toPromise();
   }
 }

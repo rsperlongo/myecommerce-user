@@ -6,6 +6,7 @@ import {
   Max,
   IsArray,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -35,6 +36,7 @@ export class QueryUsersDto {
   @ApiPropertyOptional({ enum: UserRole, isArray: true })
   @IsOptional()
   @IsArray()
+  @IsEnum(UserRole, { each: true })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       return value.split(',').map((role) => role.trim());
@@ -60,10 +62,12 @@ export class QueryUsersDto {
   })
   @IsOptional()
   @IsString()
+  @IsEnum(['email', 'createdAt', 'updatedAt'])
   sortBy?: 'email' | 'createdAt' | 'updatedAt' = 'createdAt';
 
   @ApiPropertyOptional({ enum: ['ASC', 'DESC'], default: 'DESC' })
   @IsOptional()
   @IsString()
+  @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
