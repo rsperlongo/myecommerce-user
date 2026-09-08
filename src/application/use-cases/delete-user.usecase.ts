@@ -1,6 +1,7 @@
 import {
   Injectable,
   Inject,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -17,6 +18,8 @@ export interface DeleteUserRequest {
 
 @Injectable()
 export class DeleteUserUseCase {
+  private readonly logger = new Logger(DeleteUserUseCase.name);
+
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
@@ -89,7 +92,7 @@ export class DeleteUserUseCase {
     deleter: UserEntity,
     targetUser: UserEntity,
   ): void {
-    console.log(
+    this.logger.log(
       `User deletion attempt: ${deleter.email} attempting to delete ${targetUser.email} (ID: ${targetUser.id})`,
     );
   }

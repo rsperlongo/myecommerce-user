@@ -61,6 +61,13 @@ docker-compose down
 docker-compose down -v # remove os volumes e os dados locais
 ```
 
+### Logging
+
+Os logs sao emitidos em JSON no console. Para enviar logs via GELF UDP ao Graylog,
+configure `GRAYLOG_ENABLED=true`; opcionalmente, ajuste `GRAYLOG_HOST`,
+`GRAYLOG_PORT` (padrao `12201`) e `LOG_LEVEL` (padrao `info`). Erros HTTP incluem
+metodo, rota, status, mensagem e stack trace quando disponivel.
+
 ## Scripts npm
 
 ```bash

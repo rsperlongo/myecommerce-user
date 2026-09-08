@@ -4,9 +4,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
+import { applicationLogger } from './infrastructure/logging/graylog.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: applicationLogger,
+  });
 
   app.use(helmet());
   app.enableCors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true });
