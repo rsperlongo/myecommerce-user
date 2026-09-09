@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { InitialUsersMigration20260904191000 } from './infrastructure/persistence/typeorm/migrations/initial-users.migration';
 
 @Module({
   imports: [
@@ -14,6 +17,12 @@ import { AuthModule } from './modules/auth/auth.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -25,7 +34,9 @@ import { AuthModule } from './modules/auth/auth.module';
         password: config.get<string>('POSTGRES_PASSWORD') || 'postgres',
         database: config.get<string>('POSTGRES_DB') || 'mycommerce',
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: false,
+        migrationsRun: true,
+        migrations: [InitialUsersMigration20260904191000],
       }),
     }),
     MongooseModule.forRoot(
@@ -34,12 +45,15 @@ import { AuthModule } from './modules/auth/auth.module';
     RedisModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        config: {
-          host: config.get<string>('REDIS_HOST') || 'localhost',
-          port: config.get<number>('REDIS_PORT') || 6379,
-        },
-      }),
+      useFactory: (...args: unknown[]) => {
+        const config = args[0] as ConfigService;
+        return {
+          config: {
+            host: config.get<string>('REDIS_HOST') || 'localhost',
+            port: config.get<number>('REDIS_PORT') || 6379,
+          },
+        };
+      },
     }),
     ClientsModule.registerAsync([
       {
@@ -64,6 +78,12 @@ import { AuthModule } from './modules/auth/auth.module';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

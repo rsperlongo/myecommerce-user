@@ -1,4 +1,5 @@
 import { UserRole } from '../../../domain/enums/user-role.enum';
+import { UserEntity } from '../../../domain/entities/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserResponseDto {
@@ -19,7 +20,7 @@ export class UserResponseDto {
     Object.assign(this, partial);
   }
 
-  static fromEntity(user: any): UserResponseDto {
+  static fromEntity(user: UserEntity): UserResponseDto {
     return new UserResponseDto({
       id: user.id,
       email: user.email,

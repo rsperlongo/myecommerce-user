@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -15,18 +16,18 @@ import { GetUserByIdUseCase } from '../../application/use-cases/get-user-by-id.u
 import { UpdateUserUseCase } from '../../application/use-cases/update-user.usecase';
 import { DeleteUserUseCase } from '../../application/use-cases/delete-user.usecase';
 
-import { UserEntity } from '../../domain/entities/user.entity';
-import { UserRole } from '../../domain/enums/user-role.enum';
-import { v4 as uuidv4 } from 'uuid';
+import { UserTypeormEntity } from '../../infrastructure/persistence/typeorm/user.typeorm-entity';
+import { UserRepository } from '../../infrastructure/persistence/typeorm/user.repository';
 
 @Module({
   imports: [
     PassportModule,
+    TypeOrmModule.forFeature([UserTypeormEntity]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET', 'super-secret-jwt'),
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: config.get('JWT_EXPIRES_IN', '3600s'),
         },
@@ -46,51 +47,10 @@ import { v4 as uuidv4 } from 'uuid';
     UpdateUserUseCase,
     DeleteUserUseCase,
 
-    // Repository Mock (TODO: Substituir por implementação real)
+    UserRepository,
     {
       provide: 'IUserRepository',
-      useValue: {
-        findByEmail: () => {
-          // Mock implementation - sempre retorna null para permitir criação
-          return Promise.resolve(null);
-        },
-        save: (email: string, passwordHash: string) => {
-          // Mock implementation que retorna um UserEntity válido
-          return Promise.resolve(
-            new UserEntity({
-              id: uuidv4(),
-              email,
-              password: passwordHash,
-              roles: [UserRole.USER],
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          );
-        },
-        findById: () => {
-          // Mock implementation
-          return Promise.resolve(null);
-        },
-        findAll: () => {
-          // Mock implementation
-          return Promise.resolve([]);
-        },
-        update: (id: string, data: unknown) => {
-          // Mock implementation
-          return Promise.resolve(
-            new UserEntity({
-              id,
-              ...(data as object),
-              updatedAt: new Date(),
-            }),
-          );
-        },
-        delete: () => {
-          // Mock implementation
-          return Promise.resolve(true);
-        },
-      },
+      useExisting: UserRepository,
     },
   ],
   controllers: [AuthController, UsersController],

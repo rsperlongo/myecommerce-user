@@ -29,7 +29,7 @@ export class GetUsersUseCase {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  execute(request: GetUsersRequest): GetUsersResponse {
+  async execute(request: GetUsersRequest): Promise<GetUsersResponse> {
     // Verificar permissões: apenas ADMIN e MANAGER podem listar usuários
     const requesterRole = request.requestedBy.getHighestRole();
 
@@ -71,68 +71,24 @@ export class GetUsersUseCase {
       rolesToFilter = allowedRoles;
     }
 
-    // Simular busca paginada (implementação real dependeria do repository)
-    const mockUsers = this.generateMockUsers(rolesToFilter);
+    const page = request.page || 1;
+    const limit = request.limit || 10;
+    const result = await this.userRepository.findAll({
+      page,
+      limit,
+      search: request.search,
+      roles: rolesToFilter,
+      isActive: request.isActive,
+      sortBy: request.sortBy as 'email' | 'createdAt' | 'updatedAt' | undefined,
+      sortOrder: request.sortOrder,
+    });
 
     return {
-      users: mockUsers.slice(
-        ((request.page || 1) - 1) * (request.limit || 10),
-        (request.page || 1) * (request.limit || 10),
-      ),
-      total: mockUsers.length,
-      page: request.page || 1,
-      limit: request.limit || 10,
-      totalPages: Math.ceil(mockUsers.length / (request.limit || 10)),
+      users: result.users,
+      total: result.total,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
     };
-  }
-
-  private generateMockUsers(allowedRoles: UserRole[]): UserEntity[] {
-    // Mock implementation - em produção isso viria do repository
-    const mockUsers: UserEntity[] = [
-      new UserEntity({
-        id: '1',
-        email: 'admin@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.ADMIN],
-        isActive: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      }),
-      new UserEntity({
-        id: '2',
-        email: 'manager@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.MANAGER],
-        isActive: true,
-        createdAt: new Date('2024-01-02'),
-        updatedAt: new Date('2024-01-02'),
-      }),
-      new UserEntity({
-        id: '3',
-        email: 'user@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.USER],
-        isActive: true,
-        createdAt: new Date('2024-01-03'),
-        updatedAt: new Date('2024-01-03'),
-      }),
-      new UserEntity({
-        id: '4',
-        email: 'guest@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.GUEST],
-        isActive: false,
-        createdAt: new Date('2024-01-04'),
-        updatedAt: new Date('2024-01-04'),
-      }),
-    ];
-
-    return mockUsers.filter((user) => {
-      // Filtrar por roles permitidos
-      const hasAllowedRole = user.roles.some((role) =>
-        allowedRoles.includes(role),
-      );
-      return hasAllowedRole;
-    });
   }
 }

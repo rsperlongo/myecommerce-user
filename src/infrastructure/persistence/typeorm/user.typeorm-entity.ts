@@ -10,13 +10,13 @@ import { UserRole } from '../../../domain/enums/user-role.enum';
 @Entity('users')
 export class UserTypeormEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({
     type: 'enum',
@@ -24,14 +24,14 @@ export class UserTypeormEntity {
     array: true,
     default: [UserRole.USER],
   })
-  roles: UserRole[];
+  roles!: UserRole[];
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

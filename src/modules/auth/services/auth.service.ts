@@ -1,11 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../../../domain/entities/user.entity';
+import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { JwtPayload } from '../strategies/jwt.strategy';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject('IUserRepository') private readonly userRepository: IUserRepository,
+  ) {}
 
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -26,9 +31,21 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async validateToken(token: string): Promise<any> {
+  async authenticate(email: string, password: string): Promise<UserEntity> {
+    const user = await this.userRepository.findByEmail(email);
+    if (
+      !user ||
+      !user.isActive ||
+      !(await this.comparePasswords(password, user.password))
+    ) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return user;
+  }
+
+  async validateToken(token: string): Promise<JwtPayload | null> {
     try {
-      return await this.jwtService.verifyAsync(token);
+      return await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch {
       return null;
     }

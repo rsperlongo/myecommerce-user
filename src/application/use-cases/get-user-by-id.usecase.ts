@@ -15,7 +15,7 @@ export class GetUserByIdUseCase {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  execute(request: GetUserByIdRequest): UserEntity {
+  async execute(request: GetUserByIdRequest): Promise<UserEntity> {
     const requesterRole = request.requestedBy.getHighestRole();
 
     // Verificar permissões básicas: ADMIN, MANAGER ou o próprio usuário
@@ -27,7 +27,7 @@ export class GetUserByIdUseCase {
     }
 
     // Buscar o usuário
-    const targetUser = this.findUserById(request.userId);
+    const targetUser = await this.userRepository.findById(request.userId);
     if (!targetUser) {
       throw new NotFoundException(`User with ID ${request.userId} not found`);
     }
@@ -70,49 +70,5 @@ export class GetUserByIdUseCase {
     }
 
     return false;
-  }
-
-  private findUserById(userId: string): UserEntity | null {
-    // Mock implementation
-    const mockUsers = {
-      '1': new UserEntity({
-        id: '1',
-        email: 'admin@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.ADMIN],
-        isActive: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      }),
-      '2': new UserEntity({
-        id: '2',
-        email: 'manager@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.MANAGER],
-        isActive: true,
-        createdAt: new Date('2024-01-02'),
-        updatedAt: new Date('2024-01-02'),
-      }),
-      '3': new UserEntity({
-        id: '3',
-        email: 'user@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.USER],
-        isActive: true,
-        createdAt: new Date('2024-01-03'),
-        updatedAt: new Date('2024-01-03'),
-      }),
-      '4': new UserEntity({
-        id: '4',
-        email: 'guest@test.com',
-        password: 'hashedpassword',
-        roles: [UserRole.GUEST],
-        isActive: false,
-        createdAt: new Date('2024-01-04'),
-        updatedAt: new Date('2024-01-04'),
-      }),
-    };
-
-    return mockUsers[userId as keyof typeof mockUsers] || null;
   }
 }

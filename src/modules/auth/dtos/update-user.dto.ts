@@ -5,6 +5,7 @@ import {
   IsArray,
   IsOptional,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../domain/enums/user-role.enum';
@@ -23,6 +24,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ enum: UserRole, isArray: true })
   @IsArray()
+  @IsEnum(UserRole, { each: true })
   @IsOptional()
   roles?: UserRole[];
 

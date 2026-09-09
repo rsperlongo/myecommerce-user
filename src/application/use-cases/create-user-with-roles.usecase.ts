@@ -49,11 +49,7 @@ export class CreateUserWithRolesUseCase {
       updatedAt: new Date(),
     });
 
-    // Salvar o usuário - adaptando para a interface atual
-    return (await this.userRepository.save(
-      newUser.email,
-      newUser.password,
-    )) as UserEntity;
+    return this.userRepository.save(newUser);
   }
 
   /**

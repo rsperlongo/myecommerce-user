@@ -4,6 +4,7 @@ import {
   MinLength,
   IsArray,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../domain/enums/user-role.enum';
@@ -24,6 +25,7 @@ export class CreateUserDto {
     example: [UserRole.USER],
   })
   @IsArray()
+  @IsEnum(UserRole, { each: true })
   @IsOptional()
   roles?: UserRole[];
 }

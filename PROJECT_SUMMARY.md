@@ -61,6 +61,13 @@ docker-compose down
 docker-compose down -v # remove os volumes e os dados locais
 ```
 
+### Logging
+
+Os logs sao emitidos em JSON no console. Para enviar logs via GELF UDP ao Graylog,
+configure `GRAYLOG_ENABLED=true`; opcionalmente, ajuste `GRAYLOG_HOST`,
+`GRAYLOG_PORT` (padrao `12201`) e `LOG_LEVEL` (padrao `info`). Erros HTTP incluem
+metodo, rota, status, mensagem e stack trace quando disponivel.
+
 ## Scripts npm
 
 ```bash
@@ -87,7 +94,7 @@ O teste E2E atual verifica `GET /` e espera `Hello World!`. Os testes especifico
 
 ## API
 
-Todos os endpoints abaixo usam `http://localhost:3000` como base. Envie `Content-Type: application/json` nos endpoints com corpo.
+Todos os endpoints abaixo usam `http://localhost:3001` como base. Envie `Content-Type: application/json` nos endpoints com corpo.
 
 ### Autenticacao
 

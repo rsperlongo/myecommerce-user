@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
   HttpCode,
   HttpStatus,
@@ -83,7 +84,7 @@ export class UsersController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       if (error instanceof Error && error.message.includes('already exists')) {
         throw new BadRequestException('User with this email already exists');
@@ -99,21 +100,23 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  getUsers(
+  async getUsers(
     @Query() query: QueryUsersDto,
     @CurrentUser() currentUser: UserEntity,
   ) {
     try {
-      const result = this.getUsersUseCase.execute({
-        requestedBy: currentUser,
-        page: query.page,
-        limit: query.limit,
-        search: query.search,
-        roles: query.roles,
-        isActive: query.isActive,
-        sortBy: query.sortBy,
-        sortOrder: query.sortOrder,
-      });
+      const result = await Promise.resolve(
+        this.getUsersUseCase.execute({
+          requestedBy: currentUser,
+          page: query.page,
+          limit: query.limit,
+          search: query.search,
+          roles: query.roles,
+          isActive: query.isActive,
+          sortBy: query.sortBy,
+          sortOrder: query.sortOrder,
+        }),
+      );
 
       return {
         message: 'Users retrieved successfully',
@@ -127,7 +130,7 @@ export class UsersController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       throw error;
     }
@@ -138,12 +141,17 @@ export class UsersController {
    * Permissões: ADMIN (todos), MANAGER (USER, GUEST), USER (GUEST + próprio), próprio usuário
    */
   @Get(':id')
-  getUserById(@Param('id') id: string, @CurrentUser() currentUser: UserEntity) {
+  async getUserById(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: UserEntity,
+  ) {
     try {
-      const user = this.getUserByIdUseCase.execute({
-        userId: id,
-        requestedBy: currentUser,
-      });
+      const user = await Promise.resolve(
+        this.getUserByIdUseCase.execute({
+          userId: id,
+          requestedBy: currentUser,
+        }),
+      );
 
       return {
         message: 'User retrieved successfully',
@@ -151,7 +159,7 @@ export class UsersController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       if (error instanceof NotFoundException) {
         throw error;
@@ -176,14 +184,16 @@ export class UsersController {
         ? await this.authService.hashPassword(updateUserDto.password)
         : undefined;
 
-      const updatedUser = this.updateUserUseCase.execute({
-        userId: id,
-        email: updateUserDto.email,
-        password: hashedPassword,
-        roles: updateUserDto.roles,
-        isActive: updateUserDto.isActive,
-        updatedBy: currentUser,
-      });
+      const updatedUser = await Promise.resolve(
+        this.updateUserUseCase.execute({
+          userId: id,
+          email: updateUserDto.email,
+          password: hashedPassword,
+          roles: updateUserDto.roles,
+          isActive: updateUserDto.isActive,
+          updatedBy: currentUser,
+        }),
+      );
 
       return {
         message: 'User updated successfully',
@@ -192,7 +202,7 @@ export class UsersController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       if (error instanceof NotFoundException) {
         throw error;
@@ -230,7 +240,7 @@ export class UsersController {
       };
     } catch (error) {
       if (error instanceof InsufficientPermissionsException) {
-        throw new BadRequestException(error.message);
+        throw new ForbiddenException(error.message);
       }
       if (error instanceof NotFoundException) {
         throw error;
@@ -246,16 +256,18 @@ export class UsersController {
   @Post(':id/reactivate')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  reactivateUser(
+  async reactivateUser(
     @Param('id') id: string,
     @CurrentUser() currentUser: UserEntity,
   ) {
     try {
-      const reactivatedUser = this.updateUserUseCase.execute({
-        userId: id,
-        isActive: true,
-        updatedBy: currentUser,
-      });
+      const reactivatedUser = await Promise.resolve(
+        this.updateUserUseCase.execute({
+          userId: id,
+          isActive: true,
+          updatedBy: currentUser,
+        }),
+      );
 
       return {
         message: 'User reactivated successfully',
