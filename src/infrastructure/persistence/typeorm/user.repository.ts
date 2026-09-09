@@ -42,7 +42,7 @@ export class UserRepository implements IUserRepository {
       });
     }
     if (options.roles?.length) {
-      query.andWhere('user.roles::text[] && ARRAY[:...roles]', {
+      query.andWhere('user.roles && ARRAY[:...roles]::"user_role_enum"[]', {
         roles: options.roles,
       });
     }
