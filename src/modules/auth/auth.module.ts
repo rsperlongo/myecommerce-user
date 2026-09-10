@@ -15,6 +15,7 @@ import { GetUsersUseCase } from '../../application/use-cases/get-users.usecase';
 import { GetUserByIdUseCase } from '../../application/use-cases/get-user-by-id.usecase';
 import { UpdateUserUseCase } from '../../application/use-cases/update-user.usecase';
 import { DeleteUserUseCase } from '../../application/use-cases/delete-user.usecase';
+import { GetUserStatsUseCase } from '../../application/use-cases/get-user-stats.usecase';
 
 import { UserTypeormEntity } from '../../infrastructure/persistence/typeorm/user.typeorm-entity';
 import { UserRepository } from '../../infrastructure/persistence/typeorm/user.repository';
@@ -46,6 +47,7 @@ import { UserRepository } from '../../infrastructure/persistence/typeorm/user.re
     GetUserByIdUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
+    GetUserStatsUseCase,
 
     UserRepository,
     {

@@ -150,7 +150,8 @@ Exige `ADMIN` ou `MANAGER`. Suporta paginacao, busca por email, filtro por roles
 Consulta um usuario conforme a hierarquia: `ADMIN` ve todos; `MANAGER` ve `USER` e `GUEST`; `USER` ve `GUEST` e o proprio perfil; qualquer role pode consultar o proprio perfil.
 
 #### `GET /users/stats/summary`
-Exige `ADMIN` ou `MANAGER`. Retorna estatisticas; a implementacao atual usa valores mockados.
+Exige `ADMIN` ou `MANAGER`. Retorna estatisticas calculadas diretamente no PostgreSQL,
+respeitando o escopo: `ADMIN` ve todas as roles e `MANAGER` ve apenas `USER` e `GUEST`.
 
 #### `PUT /users/:id`
 Atualiza email, senha, roles e status conforme as permissoes. O proprio usuario pode atualizar seus dados, mas nao os proprios roles. `ADMIN` pode atualizar qualquer usuario e `MANAGER` pode atualizar `USER` e `GUEST`.
@@ -209,12 +210,50 @@ Regras adicionais implementadas no CRUD:
 - a senha recebida pelo controller e encaminhada para hash;
 - erros de autenticacao retornam `401`, falta de permissao retorna `403` e violacoes de negocio podem retornar `400`.
 
-## Limitacoes conhecidas
+## Estado das limitacoes
 
-- O login ainda e demonstrativo e precisa de autenticacao real contra o repositorio.
-- Alguns casos de uso e estatisticas usam dados mockados; a persistencia real deve ser conectada antes de producao.
-- Nao ha suite automatizada dedicada ao CRUD/RBAC; os exemplos antigos foram consolidados como referencia manual nesta pagina.
-- Credenciais e segredos do Compose sao apenas para desenvolvimento local.
+- O login consulta o repositorio, rejeita usuarios inativos, compara a senha com `bcrypt`
+  e gera o JWT com as roles persistidas.
+- Os casos de uso de CRUD e o resumo estatistico usam `IUserRepository`, cuja implementacao
+  de producao e o repositorio TypeORM/PostgreSQL. O resumo calcula totais, status, roles e
+  cadastros dos ultimos sete dias sem valores fixos.
+- Ha testes unitarios de autenticacao e do escopo RBAC das estatisticas. Antes de producao,
+  ainda e recomendado adicionar testes E2E com PostgreSQL para o fluxo completo de CRUD/RBAC.
+- As credenciais do Compose continuam sendo somente para desenvolvimento local. Em producao,
+  use Secrets Manager ou Systems Manager Parameter Store e nunca valores padrao no task definition.
+
+## Proximo passo: AWS com ECS + Fargate
+
+O caminho recomendado e manter a API como uma imagem Docker imutavel e executar o servico
+em uma ECS Service com launch type Fargate:
+
+1. Criar uma VPC com subnets privadas para ECS e RDS, subnets publicas somente para o
+  Application Load Balancer, security groups restritivos e NAT Gateway quando a tarefa
+  precisar acessar a internet para buscar dependencias externas.
+2. Criar um PostgreSQL no Amazon RDS (Multi-AZ para producao), um repositorio privado no
+  Amazon ECR e, se o cache/mensageria forem necessarios, escolher Amazon ElastiCache,
+  Amazon MQ ou os servicos gerenciados equivalentes. MongoDB e Graylog do Compose nao
+  devem ser levados para producao sem uma decisao explicita de servico gerenciado.
+3. Criar os segredos no AWS Secrets Manager (`POSTGRES_PASSWORD`, `JWT_SECRET` e demais
+  URLs) e conceder ao task execution role apenas acesso aos segredos necessarios. As
+  variaveis nao sensiveis podem ficar na configuracao da task.
+4. Criar um Dockerfile de producao em multi-stage, publicar a imagem no ECR e definir uma
+  task definition Fargate com CPU/memoria, porta `3000`, log driver `awslogs`, health
+  check HTTP e execution/task roles separados.
+5. Executar migrations como etapa controlada de deploy, usando uma task ECS one-off com a
+  mesma imagem e os mesmos segredos. Nao habilitar `synchronize` no TypeORM.
+6. Criar o ECS Service atras do ALB, configurar target group na porta `3000`, autoscaling
+  por CPU/memoria ou requests e deployment circuit breaker com rollback automatico.
+7. Configurar CloudWatch Logs, alarmes para erros/latencia/saude da task, backups e
+  encryption do RDS, alem de um dominio HTTPS via ACM. O pipeline deve executar build,
+  testes, push no ECR, migration controlada e atualizacao do service.
+
+Variaveis essenciais no ambiente Fargate: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`,
+`POSTGRES_DB`, `JWT_SECRET` e `JWT_EXPIRES_IN`. As conexoes opcionais de Redis, RabbitMQ,
+MongoDB e Graylog so devem ser configuradas quando os servicos correspondentes estiverem
+disponiveis na VPC. Como proxima entrega pratica, crie o Dockerfile, a task definition e a
+infraestrutura como codigo (CDK, Terraform ou CloudFormation), valide a imagem localmente
+e depois promova para um ambiente AWS de homologacao.
 
 ## Documentacao consolidada
 

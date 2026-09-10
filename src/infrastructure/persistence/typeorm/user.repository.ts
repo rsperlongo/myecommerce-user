@@ -6,6 +6,7 @@ import { UserRole } from '../../../domain/enums/user-role.enum';
 import type {
   FindUsersOptions,
   IUserRepository,
+  UserStats,
 } from '../../../domain/repositories/user.repository.interface';
 import { UserTypeormEntity } from './user.typeorm-entity';
 
@@ -63,6 +64,41 @@ export class UserRepository implements IUserRepository {
     return { users: users.map((user) => this.toDomain(user)), total };
   }
 
+  async getStats(roles: UserRole[]): Promise<UserStats> {
+    const scopedQuery = this.repository.createQueryBuilder('user');
+    this.applyRoleScope(scopedQuery, roles);
+
+    const [total, active, inactive, recentRegistrations] = await Promise.all([
+      scopedQuery.clone().getCount(),
+      scopedQuery
+        .clone()
+        .andWhere('user.isActive = :isActive', { isActive: true })
+        .getCount(),
+      scopedQuery
+        .clone()
+        .andWhere('user.isActive = :isActive', { isActive: false })
+        .getCount(),
+      scopedQuery
+        .clone()
+        .andWhere("user.createdAt >= NOW() - INTERVAL '7 days'")
+        .getCount(),
+    ]);
+
+    const byRole = Object.fromEntries(
+      await Promise.all(
+        roles.map(async (role) => [
+          role,
+          await scopedQuery
+            .clone()
+            .andWhere(':role = ANY(user.roles)', { role })
+            .getCount(),
+        ]),
+      ),
+    ) as Partial<Record<UserRole, number>>;
+
+    return { total, active, inactive, byRole, recentRegistrations };
+  }
+
   async update(
     id: string,
     data: Partial<UserEntity>,
@@ -90,6 +126,15 @@ export class UserRepository implements IUserRepository {
       .where(':role = ANY(user.roles)', { role: UserRole.ADMIN })
       .andWhere('user.isActive = :isActive', { isActive: true })
       .getCount();
+  }
+
+  private applyRoleScope(
+    query: ReturnType<Repository<UserTypeormEntity>['createQueryBuilder']>,
+    roles: UserRole[],
+  ): void {
+    query.andWhere('user.roles && ARRAY[:...roles]::"user_role_enum"[]', {
+      roles,
+    });
   }
 
   private toPersistence(user: UserEntity): UserTypeormEntity {

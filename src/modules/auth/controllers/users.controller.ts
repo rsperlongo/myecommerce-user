@@ -33,6 +33,7 @@ import { GetUsersUseCase } from '../../../application/use-cases/get-users.usecas
 import { GetUserByIdUseCase } from '../../../application/use-cases/get-user-by-id.usecase';
 import { UpdateUserUseCase } from '../../../application/use-cases/update-user.usecase';
 import { DeleteUserUseCase } from '../../../application/use-cases/delete-user.usecase';
+import { GetUserStatsUseCase } from '../../../application/use-cases/get-user-stats.usecase';
 import { InsufficientPermissionsException } from '../../../domain/exceptions/insufficient-permissions.exception';
 
 @Controller('users')
@@ -47,6 +48,7 @@ export class UsersController {
     private readonly getUserByIdUseCase: GetUserByIdUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
+    private readonly getUserStatsUseCase: GetUserStatsUseCase,
   ) {}
 
   /**
@@ -292,41 +294,10 @@ export class UsersController {
   @Get('stats/summary')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  getUserStats(@CurrentUser() currentUser: UserEntity) {
-    // Mock implementation
-    const requesterRole = currentUser.getHighestRole();
-
-    let stats;
-    if (requesterRole === UserRole.ADMIN) {
-      stats = {
-        total: 15,
-        active: 12,
-        inactive: 3,
-        byRole: {
-          admin: 2,
-          manager: 3,
-          user: 8,
-          guest: 2,
-        },
-        recentRegistrations: 5, // Últimos 7 dias
-      };
-    } else {
-      // MANAGER só vê estatísticas de USER e GUEST
-      stats = {
-        total: 10,
-        active: 8,
-        inactive: 2,
-        byRole: {
-          user: 8,
-          guest: 2,
-        },
-        recentRegistrations: 3,
-      };
-    }
-
+  async getUserStats(@CurrentUser() currentUser: UserEntity) {
     return {
       message: 'User statistics retrieved successfully',
-      data: stats,
+      data: await this.getUserStatsUseCase.execute(currentUser),
     };
   }
 }
