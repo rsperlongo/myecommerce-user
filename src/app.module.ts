@@ -9,7 +9,9 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProfileModule } from './modules/profile/profile.module';
 import { InitialUsersMigration20260904191000 } from './infrastructure/persistence/typeorm/migrations/initial-users.migration';
+import { UserProfilesMigration20260911120000 } from './infrastructure/persistence/typeorm/migrations/user-profiles.migration';
 
 @Module({
   imports: [
@@ -36,7 +38,10 @@ import { InitialUsersMigration20260904191000 } from './infrastructure/persistenc
         autoLoadEntities: true,
         synchronize: false,
         migrationsRun: true,
-        migrations: [InitialUsersMigration20260904191000],
+        migrations: [
+          InitialUsersMigration20260904191000,
+          UserProfilesMigration20260911120000,
+        ],
       }),
     }),
     MongooseModule.forRoot(
@@ -76,6 +81,7 @@ import { InitialUsersMigration20260904191000 } from './infrastructure/persistenc
       },
     ]),
     AuthModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [
