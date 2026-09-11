@@ -5,9 +5,13 @@ import { UpsertUserProfileUseCase } from '../../application/use-cases/upsert-use
 import { UserProfileRepository } from '../../infrastructure/persistence/typeorm/user-profile.repository';
 import { UserProfileTypeormEntity } from '../../infrastructure/persistence/typeorm/user-profile.typeorm-entity';
 import { ProfileController } from './profile.controller';
+import { MembersModule } from '../members/members.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserProfileTypeormEntity])],
+  imports: [
+    MembersModule,
+    TypeOrmModule.forFeature([UserProfileTypeormEntity]),
+  ],
   controllers: [ProfileController],
   providers: [
     GetUserProfileUseCase,

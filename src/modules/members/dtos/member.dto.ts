@@ -1,15 +1,23 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsBoolean,
   Equals,
+  IsBoolean,
+  IsDateString,
+  IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
-export class UpsertProfileDto {
+export class MemberDto {
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
   @ApiProperty({ example: 'Maria da Silva' })
   @IsString()
   @IsNotEmpty()
@@ -45,8 +53,13 @@ export class UpsertProfileDto {
   @IsBoolean()
   married!: boolean;
 
-  @ApiProperty({ example: true })
-  @IsBoolean()
-  @Equals(true, { message: 'churchMember must be true for a system user' })
+  @ApiProperty({ example: true, default: true })
+  @Equals(true, { message: 'churchMember must be true for a member' })
   churchMember!: true;
+
+  @ApiProperty({ example: '2010-09-05', format: 'date' })
+  @IsDateString()
+  memberSince!: string;
 }
+
+export class UpdateMemberDto extends MemberDto {}

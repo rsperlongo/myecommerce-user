@@ -56,6 +56,6 @@ import { UserRepository } from '../../infrastructure/persistence/typeorm/user.re
     },
   ],
   controllers: [AuthController, UsersController],
-  exports: [AuthService, JwtModule, RolesGuard],
+  exports: [AuthService, JwtModule, RolesGuard, 'IUserRepository'],
 })
 export class AuthModule {}

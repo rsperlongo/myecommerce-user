@@ -10,8 +10,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { MembersModule } from './modules/members/members.module';
 import { InitialUsersMigration20260904191000 } from './infrastructure/persistence/typeorm/migrations/initial-users.migration';
 import { UserProfilesMigration20260911120000 } from './infrastructure/persistence/typeorm/migrations/user-profiles.migration';
+import { MembersMigration20260911130000 } from './infrastructure/persistence/typeorm/migrations/members.migration';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { UserProfilesMigration20260911120000 } from './infrastructure/persistenc
         migrations: [
           InitialUsersMigration20260904191000,
           UserProfilesMigration20260911120000,
+          MembersMigration20260911130000,
         ],
       }),
     }),
@@ -82,6 +85,7 @@ import { UserProfilesMigration20260911120000 } from './infrastructure/persistenc
     ]),
     AuthModule,
     ProfileModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [
